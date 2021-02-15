@@ -4,4 +4,5 @@ defmodule Rapyd do
   """
 
   @type options :: Keyword.t()
+  @type id :: String.t()
 end
