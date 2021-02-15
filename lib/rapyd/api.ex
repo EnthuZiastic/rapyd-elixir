@@ -8,9 +8,20 @@ defmodule Rapyd.Api do
   @base_url "https://api.rapyd.net"
   @version "v1"
 
+  @type method :: :get | :post | :delete | :put
+
+  @spec request(map(), method(), String.t(), keyword(), keyword()) ::
+          {:ok, map()} | {:error, any()}
   def request(body, :get, endpoint, headers, _opts) when is_map(body) do
     prepare_url(endpoint, body)
     |> HTTPoison.get(headers)
+    |> prepare_response()
+  end
+
+  def request(body, method, endpoint, headers, _opts) when is_map(body) do
+    url = prepare_url(endpoint, %{})
+
+    HTTPoison.request(method, url, Jason.encode!(body), headers)
     |> prepare_response()
   end
 
@@ -21,7 +32,17 @@ defmodule Rapyd.Api do
   end
 
   defp prepare_response({:ok, %HTTPoison.Response{body: body, status_code: 200}}) do
-    {:ok, parse_body(body)}
+    case parse_body(body) do
+      %{"data" => data} ->
+        {:ok, data}
+
+      resp ->
+        {:ok, resp}
+    end
+  end
+
+  defp prepare_response({:ok, %HTTPoison.Response{body: body}}) do
+    {:error, parse_body(body)}
   end
 
   defp prepare_response({:error, %HTTPoison.Error{reason: reason}}) do
