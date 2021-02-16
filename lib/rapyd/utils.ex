@@ -3,11 +3,25 @@ defmodule Rapyd.Utils do
     Utiliy functions
   """
 
-  @spec to_struct({:ok, map()} | {:ok, [map()]} | {:error, any()}, struct()) ::
+  @spec to_struct(Rapyd.api_respone() | map() | [map()], struct()) ::
           {:ok, struct()} | {:error, any()}
 
   def to_struct({:ok, resp}, struct_module) when is_struct(struct_module) do
-    {:ok, struct(struct_module.__struct__, resp)}
+    {:ok, to_struct(resp, struct_module)}
+  end
+
+  def to_struct(resp, struct_module) when is_map(resp) and is_struct(struct_module) do
+    struct(struct_module.__struct__, resp)
+  end
+
+  def to_struct(resp, struct_module) when is_struct(struct_module) and is_list(resp) do
+    Enum.reduce(resp, [], fn data, result ->
+      if is_map(data) do
+        struct(struct_module.__struct__, data)
+      else
+        result
+      end
+    end)
   end
 
   def to_struct(resp, _), do: resp
