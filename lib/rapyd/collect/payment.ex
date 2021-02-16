@@ -134,7 +134,7 @@ defmodule Rapyd.Collect.Payment do
     |> put_method(:post)
     |> put_param(params)
     |> send_request()
-    |> Utils.to_struct(__MODULE__)
+    |> Utils.to_struct(%__MODULE__{})
   end
 
   @spec update(String.t(), map()) :: {:ok, Payment.t()} | {:error, any()}
@@ -146,6 +146,6 @@ defmodule Rapyd.Collect.Payment do
     |> put_method(:post)
     |> put_param(params)
     |> send_request()
-    |> Utils.to_struct(__MODULE__)
+    |> Utils.to_struct(%__MODULE__{})
   end
 end
