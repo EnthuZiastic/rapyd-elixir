@@ -5,7 +5,8 @@ defmodule Rapyd.Api do
 
   alias Rapyd.Config
 
-  @base_url "https://api.rapyd.net"
+  @live_url "https://api.rapyd.net"
+  @sandbox_url "https://sandboxapi.rapyd.net"
   @version "v1"
 
   @type method :: :get | :post | :delete | :put
@@ -26,7 +27,11 @@ defmodule Rapyd.Api do
   end
 
   defp prepare_url(endpoint, params) do
-    base_url = Config.resolve(:base_url, @base_url)
+    base_url =
+      case Config.resolve(:mode) do
+        "sandbox" -> @sandbox_url
+        _ -> @live_url
+      end
 
     "#{base_url}/#{@version}/#{endpoint}?#{URI.encode_query(params)}"
   end
