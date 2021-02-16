@@ -3,23 +3,24 @@ defmodule Rapyd.Request do
     handles Request to the Rapyd API.
   """
 
+  alias Rapyd.Config
+  alias Rapyd.Request
+  alias Rapyd.Api
+
   @type t :: %__MODULE__{
-          end_point: String.t() | nil,
-          headers: map | nil,
-          opts: Keyword.t() | nil,
-          method: nil,
+          endpoint: String.t() | nil,
+          headers: map,
+          method: Api.method() | nil,
           params: map
         }
 
-  defstruct end_point: nil, opts: [], headers: nil, method: nil, params: %{}
-
-  alias Rapyd.Request
+  defstruct endpoint: nil, opts: [], headers: %{}, method: nil, params: %{}
 
   @doc """
     creates a new request 
   """
-  @spec new(Rapyd.options(), map) :: Request.t()
-  def new(opts \\ [], headers \\ %{}) do
+  @spec new_request(Rapyd.options(), map) :: Request.t()
+  def new_request(opts \\ [], headers \\ %{}) do
     %Request{opts: opts, headers: headers}
   end
 
@@ -29,7 +30,7 @@ defmodule Rapyd.Request do
   """
   @spec put_endpoint(Request.t(), String.t()) :: Request.t()
   def put_endpoint(%Request{} = request, endpoint) do
-    %{request | end_point: endpoint}
+    %{request | endpoint: endpoint}
   end
 
   @spec put_method(Request.t(), atom) :: Request.t()
@@ -38,12 +39,53 @@ defmodule Rapyd.Request do
   end
 
   @spec put_param(Request.t(), map) :: Request.t()
-  def put_param(%Request{params: params} = request, new_param) do
+  def put_param(%Request{params: params} = request, new_param) when is_map(new_param) do
     %{request | params: Map.merge(params, new_param)}
   end
 
   @spec put_param(Request.t(), atom, any) :: Request.t()
   def put_param(%Request{params: params} = request, key, value) do
     %{request | params: Map.put(params, key, value)}
+  end
+
+  @spec send_request(any()) :: any()
+  def send_request(%Request{method: method, endpoint: endpoint} = request) do
+    headers = Map.to_list(request.headers)
+    Api.request(request.params, method, endpoint, headers, request.opts)
+  end
+
+  defp common_header(%Request{method: method, endpoint: endpoint} = request) do
+    access_key = Config.resolve(:access_key, "")
+    secret_key = Config.resolve(:secret_key, "")
+
+    salt = ""
+    method = Atom.to_string(request.method)
+    url_path = "/v1/#{endpoint}"
+    timestamp = DateTime.utc_now() |> DateTime.to_unix()
+
+    %{
+      "access_key" => access_key,
+      "secret_key" => secret_key,
+      "salt" => salt,
+      "timestamp" => timestamp,
+      "Content-Type" => "Application/json",
+      "signature" =>
+        generate_signature(
+          method,
+          url_path,
+          access_key,
+          secret_key,
+          salt,
+          URI.encode_query(request.params),
+          timestamp
+        )
+    }
+  end
+
+  defp generate_signature(method, url, access_key, secret_key, salt, body, timestamp) do
+    sig_payload = method <> url <> salt <> timestamp <> access_key <> secret_key <> body
+
+    :crypto.hmac(:sha256, sig_payload, secret_key)
+    |> Base.encode64()
   end
 end
