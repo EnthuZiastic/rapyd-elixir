@@ -127,25 +127,102 @@ defmodule Rapyd.Collect.Payment do
 
   alias Rapyd.Utils
 
+  @doc """
+    creates payment 
+
+    https://docs.rapyd.net/build-with-rapyd/reference#create-payment
+  """
   @spec create(map()) :: {:ok, Payment.t()} | {:error, any()}
   def create(params) when is_map(params) do
-    new_request()
-    |> put_endpoint(@namespace)
-    |> put_method(:post)
-    |> put_param(params)
+    prepare_request(@namespace, :post, params)
     |> send_request()
     |> Utils.to_struct(%__MODULE__{})
   end
 
+  @doc """
+    change or modify a payment when the status of the payment is ACT (active)
+
+    https://docs.rapyd.net/build-with-rapyd/reference#update-payment
+  """
   @spec update(String.t(), map()) :: {:ok, Payment.t()} | {:error, any()}
   def update(payment_id, params) do
     endpoint = Utils.endpoint_with_id(@namespace, payment_id)
 
-    new_request()
-    |> put_endpoint(endpoint)
-    |> put_method(:post)
-    |> put_param(params)
+    prepare_request(endpoint, :post, params)
     |> send_request()
     |> Utils.to_struct(%__MODULE__{})
+  end
+
+  @doc """
+    Use this method to capture some or all of a card payment that was previously authorized 
+    with Create Payment with capture set to false. 
+
+    https://docs.rapyd.net/build-with-rapyd/reference#capture-payment
+  """
+  @spec capture(Rapyd.id(), map()) :: {:ok, Payment.t()} | {:error, any()}
+  def capture(payment_id, params) do
+    endpoint = "#{@namespace}/#{payment_id}/capture"
+
+    prepare_request(endpoint, :post, params)
+    |> send_request()
+    |> Utils.to_struct(%__MODULE__{})
+  end
+
+  @doc """
+    method in the sandbox to simulate a completion of a payment that has status = ACT (active). 
+    This method changes the status to CLO (closed).
+    
+    https://docs.rapyd.net/build-with-rapyd/reference#complete-payment
+
+  """
+  @spec complete(map()) :: {:ok, Payment.t()} | {:error, any()}
+  def complete(params) do
+    endpoint = "#{@namespace}/completePayment"
+
+    prepare_request(endpoint, :post, params)
+    |> send_request()
+    |> Utils.to_struct(%__MODULE__{})
+  end
+
+  @doc """
+    gives details of a payment.
+
+    https://docs.rapyd.net/build-with-rapyd/reference#retrieve-payment
+  """
+  @spec retrieve(Rapyd.id()) :: Payment.t()
+  def retrieve(payment_id) do
+    endpoint = "#{@namespace}/#{payment_id}"
+
+    prepare_request(endpoint, :get)
+    |> send_request()
+    |> Utils.to_struct(%__MODULE__{})
+    |> Utils.without_ok()
+  end
+
+  @doc """
+     cancel a payment where the status of the payment is ACT
+
+     https://docs.rapyd.net/build-with-rapyd/reference#cancel-payment
+  """
+  @spec cancel(Rapyd.id()) :: {:ok, Payment.t()} | {:error, any()}
+  def cancel(payment_id) do
+    endpoint = "#{@namespace}/#{payment_id}"
+
+    prepare_request(endpoint, :delete)
+    |> send_request()
+    |> Utils.to_struct(%__MODULE__{})
+  end
+
+  @doc """
+    retrieve a list of all payments that you have created.
+
+    https://docs.rapyd.net/build-with-rapyd/reference#list-payments
+  """
+  @spec list_payment(map()) :: [Payment.t()]
+  def list_payment(params) do
+    prepare_request(@namespace, :get, params)
+    |> send_request()
+    |> Utils.to_struct(%__MODULE__{})
+    |> Utils.without_ok()
   end
 end
