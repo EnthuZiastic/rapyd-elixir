@@ -8,7 +8,16 @@ defmodule Rapyd.Config do
 
   @spec resolve(atom, any) :: any
   def resolve(key, default) when is_atom(key) do
-    Application.get_env(:rapyd, key, default)
+    case Application.get_env(:rapyd, key, default) do
+      nil ->
+        default
+
+      {:system, env} when is_binary(env) ->
+        System.get_env(env)
+
+      value ->
+        value
+    end
   end
 
   def resolve(key, _) do

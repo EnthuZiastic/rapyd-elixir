@@ -3,7 +3,7 @@ defmodule Rapyd.MixProject do
 
   def project do
     [
-      app: :rapyd_elixir,
+      app: :rapyd,
       version: "0.1.0",
       elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
