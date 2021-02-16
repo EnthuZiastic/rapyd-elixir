@@ -30,4 +30,8 @@ defmodule Rapyd.Utils do
   def endpoint_with_id(endpoint, id) do
     "#{endpoint}/#{id}"
   end
+
+  @spec without_ok({:ok, any()} | any()) :: any()
+  def without_ok({:ok, resp}), do: resp
+  def without_ok(resp), do: resp
 end
