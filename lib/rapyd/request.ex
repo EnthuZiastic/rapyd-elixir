@@ -54,24 +54,23 @@ defmodule Rapyd.Request do
     Api.request(request.params, method, endpoint, headers, request.opts)
   end
 
-  defp common_header(%Request{method: method, endpoint: endpoint} = request) do
+  @spec add_auth_header(Request.t()) :: Request.t()
+  def add_auth_header(%Request{method: method, endpoint: endpoint} = request) do
     access_key = Config.resolve(:access_key, "")
     secret_key = Config.resolve(:secret_key, "")
 
     salt = ""
-    method = Atom.to_string(request.method)
     url_path = "/v1/#{endpoint}"
     timestamp = DateTime.utc_now() |> DateTime.to_unix()
 
-    %{
+    header = %{
       "access_key" => access_key,
-      "secret_key" => secret_key,
       "salt" => salt,
       "timestamp" => timestamp,
       "Content-Type" => "Application/json",
       "signature" =>
         generate_signature(
-          method,
+          Atom.to_string(method),
           url_path,
           access_key,
           secret_key,
@@ -80,10 +79,12 @@ defmodule Rapyd.Request do
           timestamp
         )
     }
+
+    %{request | headers: Map.merge(request.headers, header)}
   end
 
   defp generate_signature(method, url, access_key, secret_key, salt, body, timestamp) do
-    sig_payload = method <> url <> salt <> timestamp <> access_key <> secret_key <> body
+    sig_payload = "#{method}#{url}#{salt}#{timestamp}#{access_key}#{secret_key}#{body}"
 
     :crypto.hmac(:sha256, sig_payload, secret_key)
     |> Base.encode64()
