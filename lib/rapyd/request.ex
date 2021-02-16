@@ -16,11 +16,20 @@ defmodule Rapyd.Request do
 
   defstruct endpoint: nil, opts: [], headers: %{}, method: nil, params: %{}
 
+  @spec prepare_request(String.t(), atom(), map()) :: Request.t()
+  def prepare_request(endpoint, method, params \\ %{}, headers \\ %{}) do
+    new_request(headers)
+    |> put_endpoint(endpoint)
+    |> put_method(method)
+    |> put_param(params)
+    |> put_auth_header()
+  end
+
   @doc """
     creates a new request 
   """
-  @spec new_request(Rapyd.options(), map) :: Request.t()
-  def new_request(opts \\ [], headers \\ %{}) do
+  @spec new_request(map(), Rapyd.options()) :: Request.t()
+  def new_request(headers \\ %{}, opts \\ []) do
     %Request{opts: opts, headers: headers}
   end
 
@@ -54,8 +63,8 @@ defmodule Rapyd.Request do
     Api.request(request.params, method, endpoint, headers, request.opts)
   end
 
-  @spec add_auth_header(Request.t()) :: Request.t()
-  def add_auth_header(%Request{method: method, endpoint: endpoint} = request) do
+  @spec put_auth_header(Request.t()) :: Request.t()
+  def put_auth_header(%Request{method: method, endpoint: endpoint} = request) do
     access_key = Config.resolve(:access_key, "")
     secret_key = Config.resolve(:secret_key, "")
 
