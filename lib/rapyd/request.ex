@@ -3,9 +3,10 @@ defmodule Rapyd.Request do
     handles Request to the Rapyd API.
   """
 
+  alias Rapyd.Api
   alias Rapyd.Config
   alias Rapyd.Request
-  alias Rapyd.Api
+  alias Rapyd.Utils
 
   @type t :: %__MODULE__{
           endpoint: String.t() | nil,
@@ -68,7 +69,7 @@ defmodule Rapyd.Request do
     access_key = Config.resolve(:access_key, "")
     secret_key = Config.resolve(:secret_key, "")
 
-    salt = ""
+    salt = Utils.generate_random_key(15)
     url_path = "/v1/#{endpoint}"
     timestamp = DateTime.utc_now() |> DateTime.to_unix()
 
@@ -84,7 +85,7 @@ defmodule Rapyd.Request do
           access_key,
           secret_key,
           salt,
-          URI.encode_query(request.params),
+          Jason.encode!(request.params),
           timestamp
         )
     }
@@ -95,7 +96,9 @@ defmodule Rapyd.Request do
   defp generate_signature(method, url, access_key, secret_key, salt, body, timestamp) do
     sig_payload = "#{method}#{url}#{salt}#{timestamp}#{access_key}#{secret_key}#{body}"
 
-    :crypto.hmac(:sha256, sig_payload, secret_key)
-    |> Base.encode64()
+    :crypto.hmac(:sha256, secret_key, sig_payload)
+    |> Base.encode16()
+    |> String.downcase()
+    |> Base.url_encode64()
   end
 end
