@@ -7,6 +7,8 @@ defmodule Rapyd.Utils do
           {:ok, struct()} | {:error, any()}
 
   def to_struct({:ok, resp}, struct_module) when is_struct(struct_module) do
+    IO.inspect({:resp, resp})
+    IO.inspect(struct(struct_module.__struct__, resp))
     {:ok, to_struct(resp, struct_module)}
   end
 
@@ -34,4 +36,11 @@ defmodule Rapyd.Utils do
   @spec without_ok({:ok, any()} | any()) :: any()
   def without_ok({:ok, resp}), do: resp
   def without_ok(resp), do: resp
+
+  @spec generate_random_key(integer()) :: String.t()
+  def generate_random_key(length \\ 10) do
+    Enum.to_list(?a..?z)
+    |> Enum.take_random(length)
+    |> List.to_string()
+  end
 end
